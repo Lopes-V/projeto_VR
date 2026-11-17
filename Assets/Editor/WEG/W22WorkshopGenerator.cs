@@ -213,7 +213,12 @@ namespace WEG.W22.EditorTools
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = mat;
             if (isStatic)
+            {
                 GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic | StaticEditorFlags.ContributeGI | StaticEditorFlags.ReflectionProbeStatic);
+                // Colisor estático ajustado à malha: o rig XR (com gravidade) e as peças apoiam no cenário.
+                var bc = go.AddComponent<BoxCollider>();
+                bc.size = Vector3.Max(bc.size, Vector3.one * 0.01f);
+            }
             return go;
         }
 
@@ -295,7 +300,10 @@ namespace WEG.W22.EditorTools
             float w = RoomX1 - RoomX0, d = RoomZ1 - RoomZ0, cx = (RoomX0 + RoomX1) * 0.5f, cz = (RoomZ0 + RoomZ1) * 0.5f;
             float band = 1.2f;
 
-            Plane(t, "Piso", "piso", new Vector3(cx, 0, cz), new Vector2(w, d), Quaternion.identity, 2f);
+            var floor = Plane(t, "Piso", "piso", new Vector3(cx, 0, cz), new Vector2(w, d), Quaternion.identity, 2f);
+            var floorCol = floor.GetComponent<BoxCollider>();
+            floorCol.center = new Vector3(0, -0.1f, 0);
+            floorCol.size = new Vector3(w, 0.2f, d);
             Plane(t, "Teto", "teto", new Vector3(cx, RoomH, cz), new Vector2(w, d), FaceDown, 2f);
 
             // Paredes: parte superior clara + faixa inferior escura.
@@ -830,7 +838,20 @@ namespace WEG.W22.EditorTools
             var inst = (GameObject)PrefabUtility.InstantiatePrefab(rig);
             inst.transform.position = Vector3.zero;
             inst.transform.rotation = Quaternion.identity;
+
+            // Simulador XR para testar sem óculos (mouse e teclado). Tag EditorOnly: não entra no build do Quest.
+            var sim = AssetDatabase.LoadAssetAtPath<GameObject>(XrSimulatorPath);
+            if (sim != null)
+            {
+                var s = (GameObject)PrefabUtility.InstantiatePrefab(sim);
+                s.tag = "EditorOnly";
+                s.AddComponent<W22SimulatorHeight>();
+            }
+            else
+                Debug.LogWarning("[WEG] XR Interaction Simulator não importado (Package Manager > XR Interaction Toolkit > Samples).");
         }
+
+        const string XrSimulatorPath = "Assets/Samples/XR Interaction Toolkit/3.6.1/XR Interaction Simulator/XR Interaction Simulator.prefab";
 
         static void EnsureFolder(string path)
         {
