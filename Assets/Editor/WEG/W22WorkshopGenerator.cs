@@ -84,8 +84,10 @@ namespace WEG.W22.EditorTools
                 BuildPartsCrate(new GameObject("Caixa_Pecas").transform);
                 BuildProps(new GameObject("Ambientacao").transform);
                 BuildXrRig();
+                W22GameplaySetup.Apply();
 
                 EditorSceneManager.SaveScene(scene, ScenePath);
+                W22GameplaySetup.EnsureInBuildSettings(ScenePath);
             }
             finally
             {
@@ -207,7 +209,7 @@ namespace WEG.W22.EditorTools
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             int[] used;
-            var mesh = b.ToMesh(name, out used);
+            var mesh = b.ToMesh($"{meshCounter:000}_{name}", out used);
             mesh = SaveMesh(mesh, $"{MeshDir}/{meshCounter:000}_{name}.asset");
             meshCounter++;
             go.AddComponent<MeshFilter>().sharedMesh = mesh;

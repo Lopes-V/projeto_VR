@@ -6,7 +6,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Parede_Frente_Faixa
+  m_Name: 003_Parede_Frente_Faixa
   serializedVersion: 12
   m_SubMeshes:
   - serializedVersion: 2

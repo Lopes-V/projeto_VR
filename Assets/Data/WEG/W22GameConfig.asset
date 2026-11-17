@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1eac65e64408f6499d6516d2514e150, type: 3}
+  m_Name: W22GameConfig
+  m_EditorClassIdentifier: Assembly-CSharp::WEG.W22.W22GameConfig
+  initialScore: 1000
+  orderErrorPenalty: 20
+  locationErrorPenalty: 40
+  referenceTime: 600
+  timePenaltyInterval: 10
+  pauseTimerOnPanel: 1
+  excellentMin: 900
+  goodMin: 700
+  regularMin: 400
+  snapRadius: 0.1
+  smallPartSnapRadius: 0.045
+  steps:
+  - step: 1
+    title: "Prepara\xE7\xE3o do rotor"
+    action: "Encaixar os dois rolamentos nas posi\xE7\xF5es do eixo."
+    parts: "\u2022 Rotor com eixo\n\u2022 Rolamento dianteiro 6308-ZZ (lado da ponta de eixo)\n\u2022 Rolamento traseiro 6207-ZZ"
+    explanation: "O rotor \xE9 a parte girante do motor e transmite o movimento ao exterior por meio do eixo. Os rolamentos apoiam o eixo, reduzem o atrito e permitem que ele gire com estabilidade. Na montagem real, s\xE3o instalados com cuidado, sem impactos, para n\xE3o danificar as pistas."
+  - step: 2
+    title: "Instala\xE7\xE3o do rotor na carca\xE7a"
+    action: Inserir o conjunto do rotor no interior do estator.
+    parts: "\u2022 Carca\xE7a com estator bobinado (motor-base)\n\u2022 Conjunto do rotor com rolamentos"
+    explanation: "O estator, com seu enrolamento, produz o campo magn\xE9tico que faz o rotor girar. O rotor deve ser inserido centralizado e sem tocar no enrolamento, para evitar danos."
+  - step: 3
+    title: Tampa traseira
+    action: "Posicionar a tampa traseira e fix\xE1-la com os parafusos."
+    parts: "\u2022 Tampa traseira\n\u2022 4 parafusos"
+    explanation: "As tampas fecham a carca\xE7a, alojam os rolamentos e mant\xEAm o rotor centralizado. A tampa traseira fica do lado oposto \xE0 ponta de eixo."
+  - step: 4
+    title: Tampa dianteira
+    action: "Posicionar a tampa dianteira (lado da ponta de eixo) e fix\xE1-la."
+    parts: "\u2022 Tampa dianteira\n\u2022 4 parafusos"
+    explanation: A tampa dianteira completa o fechamento do conjunto e sustenta o eixo do lado que aciona a carga, mantendo o alinhamento entre rotor e estator.
+  - step: 5
+    title: Ventilador e tampa defletora
+    action: Encaixar o ventilador no eixo, no lado traseiro, e depois fixar a tampa defletora.
+    parts: "\u2022 Ventilador\n\u2022 Tampa defletora\n\u2022 3 parafusos"
+    explanation: "O ventilador gira com o eixo e empurra ar sobre a carca\xE7a para resfriar o motor. A tampa defletora protege o ventilador e direciona o fluxo de ar pelas aletas da carca\xE7a."
+  - step: 6
+    title: "Caixa de liga\xE7\xE3o"
+    action: "Fixar a base da caixa de liga\xE7\xE3o na carca\xE7a e, em seguida, a tampa."
+    parts: "\u2022 Base da caixa de liga\xE7\xE3o + 4 parafusos\n\u2022 Tampa da caixa de liga\xE7\xE3o + 4 parafusos"
+    explanation: "A caixa de liga\xE7\xE3o abriga os terminais de conex\xE3o el\xE9trica do motor e protege essas conex\xF5es. \xC9 por ela que o motor \xE9 ligado \xE0 rede el\xE9trica."
+  - step: 7
+    title: Chaveta
+    action: Inserir a chaveta no rasgo da ponta de eixo.
+    parts: "\u2022 Chaveta 10 x 8 x 63 mm"
+    explanation: "A chaveta transmite o torque do eixo a polias ou acoplamentos, evitando que a pe\xE7a acoplada deslize sobre o eixo."

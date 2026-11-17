@@ -18,7 +18,7 @@ namespace WEG.W22
 
         void Start()
         {
-            origin = FindFirstObjectByType<XROrigin>();
+            origin = FindAnyObjectByType<XROrigin>();
             if (origin == null) return;
             origin.RequestedTrackingOriginMode = XROrigin.TrackingOriginMode.Device;
             origin.CameraYOffset = eyeHeight;
