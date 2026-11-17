@@ -31,7 +31,6 @@ Todo valor marcado **[VALIDAR]** ainda não foi confirmado em catálogo oficial 
 - Atenção: a cor Verde RAL 6002 é da linha **Brake**, não do W22 padrão (Brake p.3). Não usar no modelo.
 
 ## Ainda a confirmar **[VALIDAR]**
-- Cor exata da pintura do W22 padrão (WEG usa azul; nenhum PDF lido informa RAL/Munsell da linha padrão). Fonte provável: catálogo técnico W22 listado acima, exige download aprovado.
 - Quantidade, espaçamento e altura das aletas e diâmetro externo da carcaça (só em desenho cotado; não confirmado).
 - Do W22 padrão 132M 4 polos: L total, AB, AC, HD, HC e dimensões da caixa de ligação. Só há valores da linha Severe Process (L 490, AC 271, HD 354); não usar como padrão sem validar.
 - Formato exato, posição e dimensões da placa de identificação; logo e relevo da tampa (o conteúdo da placa está confirmado em Prime p.7).
@@ -42,7 +41,7 @@ Todo valor marcado **[VALIDAR]** ainda não foi confirmado em catálogo oficial 
 2. Silhueta: corpo cilíndrico aletado, tampa traseira com defletor e grade de ventilação, caixa de ligação retangular sobre o corpo, pés maciços com 4 furos, eixo com chaveta.
 3. Proporções fixas: usar escala 1:1 em metros. Toda dimensão vem de `Assets/Reference/WEG/dimensoes.md`. Se não existir esse arquivo, parar e pedir referência. Itens "não confirmado" nesse arquivo não podem ser modelados por estimativa.
 4. Nada de inventar detalhes "bonitos" que o motor real não tem. Beleza vem de acabamento: bordas chanfradas, normais corretas, materiais PBR, desgaste sutil opcional.
-5. Materiais (exatamente 5, limite do orçamento): `WEG_Paint_Blue` (toda a pintura), `WEG_Steel` (eixo, chaveta, parafusos, chapas do rotor e estator), `WEG_Copper` (bobinas), `WEG_Dark` (ventilador plástico, furos, gravações) e `WEG_Aluminum` (anéis do rotor, blindagens dos rolamentos e placa de identificação). O valor RGB do azul continua [VALIDAR].
+5. Materiais (exatamente 5, limite do orçamento): `WEG_Paint_Blue` (toda a pintura), `WEG_Steel` (eixo, chaveta, parafusos, chapas do rotor e estator), `WEG_Copper` (bobinas), `WEG_Dark` (ventilador plástico, furos, gravações) e `WEG_Aluminum` (anéis do rotor, blindagens dos rolamentos e placa de identificação). Azul confirmado: **RAL 5009** (W22 Premium, tabela de cores WEG 50102574), sRGB aproximado #2E5978, semibrilho.
 6. Divisão da caixa de ligação: horizontal no 132M [PROJ]. A divisão diagonal só está confirmada para 160M a 355 e na linha Prime; para o 132M padrão continua [VALIDAR].
 
 ## Orçamento para Quest 3 (URP, Vulkan)

@@ -166,7 +166,8 @@ Posição, tamanho e relevo: **não confirmado**. Nenhuma fonte lida descreve o 
 | Plano de pintura | 203A, semibrilho; primer alquídico óxido vermelho (1 demão) + esmalte sintético alquídico (1 demão). Espessuras lidas como 20 e 60 (unidade ilegível na extração, provavelmente µm) | [PRIME] p.13 (7.3) |
 | Categoria de corrosão | C3 (ISO 12944-2) em Prime e Severe Process; C2 em Brake | [PRIME] p.13; [SP] p.3; [BRK] p.3 |
 | Cor da linha Brake | Verde RAL 6002 | [BRK] p.3 |
-| **Cor do W22 padrão (azul?)** | **não confirmado.** Nenhum dos três documentos lidos informa cor/RAL/Munsell para a linha padrão. | n/a |
+| **Cor do W22 padrão** | **Azul RAL 5009** (W22 Premium). Plano de pintura 207A para carcaças 63 a 132 (203A de 160 a 355A/B). sRGB aproximado #2E5978. | Tabela de cores WEG 50102574: https://static.weg.net/medias/downloadcenter/hbf/h28/WEG-color-chart-electric-motors-50102574-brochure-en.pdf ; brochura W22 PT 50025536 |
+| Observação | Catálogos antigos associam RAL 5009 ou RAL 6002 (verde) conforme a classe de eficiência e o mercado. Para o W22 Premium a tabela de cores atual indica RAL 5009. | idem |
 
 Atenção: a cor verde RAL 6002 é da linha Brake. Não usar para o W22 padrão.
 

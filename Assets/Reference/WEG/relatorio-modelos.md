@@ -27,4 +27,4 @@ Gerado por `WEG/Gerar modelos W22 132M`. Medidas em `Assets/Scripts/WEG/W22Dimen
 
 - Motor montado (P01 a P11 + 19 parafusos P12), LOD0: **21148 triângulos** (orçamento do guia: até 40 000).
 - Todas as peças (motor + distratoras, parafuso contado uma vez), LOD0: 24876 triângulos.
-- Valores provisórios: ver legenda [SP] e [PROJ] em W22Dimensions.cs. Cor do azul WEG ainda [VALIDAR].
+- Valores provisórios: ver legenda [SP] e [PROJ] em W22Dimensions.cs. Pintura: azul RAL 5009 (W22 Premium, tabela de cores WEG).

@@ -89,7 +89,7 @@ namespace WEG.W22.EditorTools
             report.AppendLine();
             report.AppendLine($"- Motor montado (P01 a P11 + {slots.Count} parafusos P12), LOD0: **{totalMotor} triângulos** (orçamento do guia: até 40 000).");
             report.AppendLine($"- Todas as peças (motor + distratoras, parafuso contado uma vez), LOD0: {total} triângulos.");
-            report.AppendLine("- Valores provisórios: ver legenda [SP] e [PROJ] em W22Dimensions.cs. Cor do azul WEG ainda [VALIDAR].");
+            report.AppendLine("- Valores provisórios: ver legenda [SP] e [PROJ] em W22Dimensions.cs. Pintura: azul RAL 5009 (W22 Premium, tabela de cores WEG).");
 
             var assembled = BuildAssembled(defs, prefabs, slots);
             BuildPreviewScene(defs, prefabs, assembled, slots);
@@ -615,8 +615,9 @@ namespace WEG.W22.EditorTools
         {
             var defs = new (string name, Color color, float metallic, float smooth)[]
             {
-                // Azul WEG: tom provisório [VALIDAR]. Acabamento semibrilho [WEG: plano 203A].
-                ("WEG_Paint_Blue", new Color(0.10f, 0.27f, 0.55f), 0.10f, 0.55f),
+                // Azul RAL 5009 (W22 Premium) [WEG: tabela de cores 50102574; plano de pintura 207A para 63 a 132].
+                // sRGB aproximado do RAL 5009: #2E5978. Acabamento semibrilho.
+                ("WEG_Paint_Blue", new Color(46f / 255f, 89f / 255f, 120f / 255f), 0.10f, 0.55f),
                 ("WEG_Steel", new Color(0.70f, 0.71f, 0.73f), 0.90f, 0.60f),
                 ("WEG_Copper", new Color(0.78f, 0.42f, 0.22f), 0.90f, 0.55f),
                 ("WEG_Dark", new Color(0.07f, 0.07f, 0.08f), 0.00f, 0.35f),
