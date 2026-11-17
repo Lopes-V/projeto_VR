@@ -71,6 +71,7 @@ namespace WEG.W22.EditorTools
             EnsureFolder(TexDir);
             meshCounter = 0;
             BuildMaterials();
+            toolPrefabs = W22ToolFactory.BuildAll(new[] { M["vermelho"], M["aco"], M["madeira"], M["preto"], M["metal"] });
 
             var previous = SceneManager.GetActiveScene();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
@@ -677,7 +678,10 @@ namespace WEG.W22.EditorTools
             BuildShelf(new GameObject("Estante").transform, t);
             BuildCrane(new GameObject("Ponte_Rolante").transform, t);
             BuildSafety(new GameObject("Seguranca").transform, t);
+            BuildLooseTools(t);
         }
+
+        static Dictionary<string, GameObject> toolPrefabs = new Dictionary<string, GameObject>();
 
         static void BuildToolWall(Transform t, Transform parent)
         {
@@ -692,42 +696,76 @@ namespace WEG.W22.EditorTools
                 new Color(0.18f, 0.22f, 0.28f), new Vector2(5.0f, 0.25f));
 
             float fz = z - 0.025f;
-            // Chaves combinadas (tamanhos crescentes).
-            for (int i = 0; i < 7; i++)
-            {
-                float len = 0.14f + i * 0.02f, x = -1.15f + i * 0.07f, y = 1.92f - len * 0.5f;
-                Box(t, $"Chave_{i}_Haste", "aco", new Vector3(x, y, fz), new Vector3(0.018f + i * 0.002f, len, 0.006f), 0.002f);
-                Cyl(t, $"Chave_{i}_Boca", "aco", new Vector3(x, y + len * 0.5f, fz), 0.018f + i * 0.002f, 0.008f, 14, Quaternion.Euler(90f, 0, 0));
-                Cyl(t, $"Chave_{i}_Anel", "aco", new Vector3(x, y - len * 0.5f, fz), 0.016f + i * 0.002f, 0.008f, 14, Quaternion.Euler(90f, 0, 0));
-            }
-            // Martelo.
-            Cyl(t, "Martelo_Cabo", "madeira", new Vector3(-0.45f, 1.55f, fz), 0.014f, 0.32f, 10);
-            Box(t, "Martelo_Cabeca", "metal", new Vector3(-0.45f, 1.73f, fz), new Vector3(0.12f, 0.04f, 0.035f), 0.004f);
-            // Chaves de fenda.
-            string[] handleMats = { "vermelho", "amarelo", "vermelho", "amarelo", "preto" };
-            for (int i = 0; i < 5; i++)
-            {
-                float x = -0.2f + i * 0.06f;
-                Cyl(t, $"Fenda_{i}_Cabo", handleMats[i], new Vector3(x, 1.86f, fz), 0.014f, 0.1f, 10);
-                Cyl(t, $"Fenda_{i}_Haste", "aco", new Vector3(x, 1.73f, fz), 0.004f, 0.16f, 8);
-            }
-            // Alicates (simplificados).
-            for (int i = 0; i < 3; i++)
-            {
-                float x = 0.25f + i * 0.09f;
-                Box(t, $"Alicate_{i}_Cabo_E", "vermelho", new Vector3(x - 0.012f, 1.66f, fz), new Vector3(0.016f, 0.14f, 0.01f), 0.004f, Quaternion.Euler(0, 0, 6f));
-                Box(t, $"Alicate_{i}_Cabo_D", "vermelho", new Vector3(x + 0.012f, 1.66f, fz), new Vector3(0.016f, 0.14f, 0.01f), 0.004f, Quaternion.Euler(0, 0, -6f));
-                Box(t, $"Alicate_{i}_Boca", "metal", new Vector3(x, 1.77f, fz), new Vector3(0.03f, 0.07f, 0.012f), 0.004f);
-            }
-            // Torquímetro e chave inglesa.
-            Box(t, "Torquimetro", "aco", new Vector3(0.75f, 1.62f, fz), new Vector3(0.022f, 0.45f, 0.02f), 0.004f);
-            Cyl(t, "Torquimetro_Cabo", "preto", new Vector3(0.75f, 1.44f, fz), 0.016f, 0.1f, 10);
-            Box(t, "Chave_Inglesa", "aco", new Vector3(0.92f, 1.62f, fz), new Vector3(0.03f, 0.26f, 0.01f), 0.004f);
-            Box(t, "Chave_Inglesa_Boca", "aco", new Vector3(0.92f, 1.77f, fz), new Vector3(0.07f, 0.05f, 0.012f), 0.004f);
+            // Quadro de sombras: silhueta branca de cada ferramenta (organização) com ponto de encaixe.
+            var sils = new GameObject("Silhuetas_Ferramentas").transform;
+            sils.SetParent(t, false);
+            float[] toolX = { -0.95f, -0.6f, -0.25f, 0.12f, 0.55f };
+            for (int i = 0; i < W22ToolFactory.Tools.Length; i++)
+                ToolSilhouette(sils, W22ToolFactory.Tools[i], new Vector3(toolX[i], 1.62f, z - 0.001f));
+            Label(t, "Rotulo_Painel", "PAINEL DE FERRAMENTAS · pendure cada ferramenta na sua silhueta", new Vector3(-0.2f, 1.18f, z - 0.004f),
+                Quaternion.identity, 0.55f, new Color(0.12f, 0.1f, 0.08f), new Vector2(2.4f, 0.07f));
             // Prateleira de potes (rolamentos, graxa).
             Box(t, "Prateleira_Painel", "metal", new Vector3(1.05f, 1.30f, fz - 0.06f), new Vector3(0.36f, 0.015f, 0.14f), 0.003f);
             for (int i = 0; i < 3; i++)
                 Cyl(t, $"Pote_{i}", i == 1 ? "vermelho" : "metal", new Vector3(0.95f + i * 0.1f, 1.35f, fz - 0.06f), 0.035f, 0.08f, 14);
+        }
+
+        static void ToolSilhouette(Transform parent, W22ToolFactory.ToolDef def, Vector3 pos)
+        {
+            GameObject prefab;
+            if (!toolPrefabs.TryGetValue(def.id, out prefab)) return;
+            var mesh = prefab.transform.Find("LOD0").GetComponent<MeshFilter>().sharedMesh;
+            var root = new GameObject($"Silhueta_{def.id}");
+            root.transform.SetParent(parent, false);
+            root.transform.localPosition = pos;
+            var info = root.AddComponent<W22PartInfo>();
+            info.partId = def.id;
+            info.displayName = $"Silhueta {def.name}";
+            // Ferramenta pendurada com a face de trás encostada no painel.
+            var fit = new GameObject("Encaixe");
+            fit.transform.SetParent(root.transform, false);
+            fit.transform.localPosition = new Vector3(0, 0, -mesh.bounds.max.z - 0.002f);
+            var flat = new GameObject("Contorno");
+            flat.transform.SetParent(root.transform, false);
+            flat.transform.localPosition = new Vector3(0, 0, -0.0015f);
+            flat.transform.localScale = new Vector3(1.06f, 1.03f, 0.004f);
+            var vis = new GameObject("Malha");
+            vis.transform.SetParent(flat.transform, false);
+            vis.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = vis.AddComponent<MeshRenderer>();
+            var mats = new Material[mesh.subMeshCount];
+            for (int i = 0; i < mats.Length; i++) mats[i] = M["silhueta"];
+            mr.sharedMaterials = mats;
+            mr.shadowCastingMode = ShadowCastingMode.Off;
+            // Gancho do painel.
+            Box(root.transform, "Gancho", "aco", new Vector3(0, mesh.bounds.max.y * 0.55f, -0.012f), new Vector3(0.006f, 0.006f, 0.024f), 0.001f);
+        }
+
+        /// <summary>Ferramentas fora do lugar, sobre o armário (o aluno deve pendurá-las no painel).</summary>
+        static void BuildLooseTools(Transform parent)
+        {
+            var root = new GameObject("Ferramentas_Soltas").transform;
+            root.SetParent(parent, false);
+            var rnd = new System.Random(5);
+            Vector3 top = new Vector3(-2.35f, 0.99f, 1.75f);
+            for (int i = 0; i < W22ToolFactory.Tools.Length; i++)
+            {
+                GameObject prefab;
+                if (!toolPrefabs.TryGetValue(W22ToolFactory.Tools[i].id, out prefab)) continue;
+                var inst = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+                inst.transform.SetParent(root, false);
+                // Deitada (face plana para cima), eixo longo na profundidade do tampo.
+                var rot = Quaternion.Euler(0, (float)rnd.NextDouble() * 30f - 15f, 0) * Quaternion.Euler(90f, 0, 0);
+                inst.transform.localRotation = rot;
+                var bc = inst.GetComponent<BoxCollider>();
+                float minY = float.MaxValue;
+                for (int c = 0; c < 8; c++)
+                {
+                    var corner = bc.center + Vector3.Scale(bc.size * 0.5f, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1));
+                    minY = Mathf.Min(minY, (rot * corner).y);
+                }
+                inst.transform.localPosition = top + new Vector3(-0.28f + i * 0.14f, -minY + 0.001f, 0f);
+            }
         }
 
         static void BuildRollCabinet(Transform t, Transform parent, Vector3 pos)

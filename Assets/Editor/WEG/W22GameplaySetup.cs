@@ -40,12 +40,16 @@ namespace WEG.W22.EditorTools
             var config = EnsureConfig();
             var outline = EnsureOutlineMaterial();
 
-            // 1. Peças pegáveis (caixa e bandeja).
+            // 1. Peças e ferramentas pegáveis (caixa, bandeja e ferramentas sobre o armário).
+            var roots = new List<Transform>();
             var piecesRoot = GameObject.Find("Caixa_Pecas/Pecas");
+            if (piecesRoot != null) roots.Add(piecesRoot.transform);
+            var toolsRoot = GameObject.Find("Ambientacao/Ferramentas_Soltas");
+            if (toolsRoot != null) roots.Add(toolsRoot.transform);
             W22Part rotor = null;
-            if (piecesRoot != null)
+            foreach (var groupRoot in roots)
             {
-                foreach (Transform child in piecesRoot.transform)
+                foreach (Transform child in groupRoot)
                 {
                     var info = child.GetComponent<W22PartInfo>();
                     if (info == null) continue;
@@ -65,13 +69,26 @@ namespace WEG.W22.EditorTools
                     part.partId = info.partId;
                     part.isDistractor = info.isDistractor;
                     if (info.partId == "P01") rotor = part;
+                    foreach (var def in W22ToolFactory.Tools)
+                    {
+                        if (def.id != info.partId) continue;
+                        rb.mass = 0.4f;
+                        grab.useDynamicAttach = false; // segura pelo cabo, ponta para a frente
+                        var tool = GetOrAdd<W22Tool>(child.gameObject);
+                        tool.canTighten = def.canTighten;
+                        tool.tip = child.Find("Ponta");
+                    }
                 }
             }
 
-            // 2. Silhuetas da bancada (organização).
+            // 2. Silhuetas da bancada e do painel de ferramentas (organização).
+            var silRoots = new List<Transform>();
             var sil = GameObject.Find("Bancada/Silhuetas");
-            if (sil != null)
-                foreach (Transform s in sil.transform)
+            if (sil != null) silRoots.Add(sil.transform);
+            var toolSil = GameObject.Find("Ambientacao/Painel_Ferramentas/Silhuetas_Ferramentas");
+            if (toolSil != null) silRoots.Add(toolSil.transform);
+            foreach (var silRoot in silRoots)
+                foreach (Transform s in silRoot)
                 {
                     var info = s.GetComponent<W22PartInfo>();
                     var fit = s.Find("Encaixe");
@@ -147,6 +164,21 @@ namespace WEG.W22.EditorTools
             t.step = rule.step;
             t.order = rule.order;
             t.radius = radius;
+            // Posição correta: orientação conforme a simetria de cada peça.
+            switch (id)
+            {
+                case "P01": case "P05": case "P06": case "P07": case "P08":
+                    t.orientation = W22OrientationRule.Axis; t.axis = Vector3.forward; break;     // eixo do motor, sentido importa
+                case "P02": case "P03": case "P11":
+                    t.orientation = W22OrientationRule.AxisFlip; t.axis = Vector3.forward; break; // simétricas de frente e verso
+                case "P09":
+                    t.orientation = W22OrientationRule.Full; break;                               // entradas de cabo de um lado
+                case "P10":
+                    t.orientation = W22OrientationRule.FullFlipY; break;                          // tampa simétrica
+                case "P12":
+                    t.orientation = W22OrientationRule.Axis; t.axis = Vector3.up;                 // cabeça para fora
+                    t.requiresTightening = true; break;
+            }
         }
 
         static Material EnsureOutlineMaterial()
@@ -167,10 +199,19 @@ namespace WEG.W22.EditorTools
 
         static W22GameConfig EnsureConfig()
         {
+            const int CurrentDataVersion = 2;
             var cfg = AssetDatabase.LoadAssetAtPath<W22GameConfig>(ConfigPath);
-            if (cfg != null) return cfg; // preserva ajustes feitos pela equipe
-            EnsureFolder("Assets/Data/WEG");
-            cfg = ScriptableObject.CreateInstance<W22GameConfig>();
+            if (cfg != null && cfg.dataVersion >= CurrentDataVersion) return cfg; // preserva ajustes feitos pela equipe
+            bool create = cfg == null;
+            if (create)
+            {
+                EnsureFolder("Assets/Data/WEG");
+                cfg = ScriptableObject.CreateInstance<W22GameConfig>();
+            }
+            cfg.dataVersion = CurrentDataVersion;
+            cfg.orientationTolerance = 25f;
+            cfg.tightenTime = 1.2f;
+            const string Tighten = " Aperte cada parafuso com a chave combinada 13 mm ou o torquímetro (ponta no parafuso + gatilho).";
             cfg.steps = new[]
             {
                 Step(1, "Preparação do rotor", "Encaixar os dois rolamentos nas posições do eixo.",
@@ -195,7 +236,15 @@ namespace WEG.W22.EditorTools
                     "• Chaveta 10 x 8 x 63 mm",
                     "A chaveta transmite o torque do eixo a polias ou acoplamentos, evitando que a peça acoplada deslize sobre o eixo."),
             };
-            AssetDatabase.CreateAsset(cfg, ConfigPath);
+            // Etapas com parafusos: o aperto com ferramenta faz parte da ação.
+            foreach (var s in cfg.steps)
+                if (s.step >= 3 && s.step <= 6)
+                {
+                    s.action += Tighten;
+                    s.parts += "\n• Ferramenta: chave combinada 13 mm ou torquímetro";
+                }
+            if (create) AssetDatabase.CreateAsset(cfg, ConfigPath);
+            else EditorUtility.SetDirty(cfg);
             return cfg;
         }
 

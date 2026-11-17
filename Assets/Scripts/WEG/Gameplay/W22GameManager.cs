@@ -50,6 +50,8 @@ namespace WEG.W22
                 p.Body.isKinematic = true; // parados na caixa até serem pegos
                 p.SetState(W22PartState.None);
                 if (p.Grab != null) p.Grab.enabled = false;
+                var tool = p.GetComponent<W22Tool>();
+                if (tool != null) tool.Bind(this);
             }
             if (shuffleCrate) ShuffleCrate();
             if (disableJoystickLocomotion) DisableLocomotion();
@@ -58,11 +60,10 @@ namespace WEG.W22
             var cam = Camera.main;
             ui.Build(cam != null ? cam.transform : null);
             ui.ShowPanel("Montagem do Motor WEG W22", null,
-                "Bem-vindo à oficina de montagem.\n\n" +
-                "<b>1. Organização:</b> pegue cada peça da caixa amarela à sua direita e coloque-a sobre a silhueta branca correspondente na bancada. Cuidado: há peças que não pertencem ao motor.\n\n" +
-                "<b>2. Montagem:</b> monte o motor etapa por etapa. A borda da peça indica o resultado:\n" +
-                "<color=#3BE65A>verde</color> = correto   <color=#FFD21A>amarela</color> = fora de ordem   <color=#F2261A>vermelha</color> = local errado.\n\n" +
-                "Use o gatilho lateral (grip) para pegar e soltar as peças. O cronômetro começa no primeiro toque em uma peça.",
+                "<b>1. Organize a oficina:</b> pendure cada ferramenta (sobre o armário vermelho) na sua silhueta do painel e coloque cada peça do motor (caixa amarela e bandeja de parafusos) na sua silhueta da bancada. Cuidado: há peças que não pertencem ao motor.\n\n" +
+                "<b>2. Monte o motor:</b> encaixe cada peça na posição e na orientação corretas e aperte os parafusos com a <b>chave combinada 13 mm</b> ou o <b>torquímetro</b>: encoste a ponta no parafuso e segure o gatilho.\n" +
+                "<color=#3BE65A>verde</color> correto · <color=#FFD21A>amarela</color> fora de ordem · <color=#F2261A>vermelha</color> local ou posição errada · <color=#33BFFF>azul</color> falta apertar\n\n" +
+                "Grip: pegar e soltar. Gatilho: usar a ferramenta. O cronômetro começa no primeiro toque.",
                 "Iniciar", BeginOrganization);
             RefreshHud();
         }
@@ -89,7 +90,7 @@ namespace WEG.W22
             foreach (var p in parts) if (p.state == W22PartState.Correct) p.SetState(W22PartState.None);
             var info = config.GetStep(1);
             ui.ShowPanel("Organização concluída!", null,
-                "Todas as peças estão nas silhuetas corretas.\n\nAgora monte o motor no suporte à sua frente, etapa por etapa.\n\n" +
+                "Ferramentas no painel e peças na bancada.\n\nAgora monte o motor no suporte à sua frente, etapa por etapa. Pegue a chave 13 mm ou o torquímetro no painel quando for apertar os parafusos.\n\n" +
                 $"<b>Etapa 1 · {info?.title}</b>\n{info?.action}",
                 "Começar montagem", null);
             Play(stepClip);
@@ -157,6 +158,8 @@ namespace WEG.W22
             if (!timerRunning && CurrentPhase != Phase.Result) timerRunning = true; // começa no primeiro contato
             if (p.current != null) p.current.occupant = null;
             p.current = null;
+            p.tight = false;
+            p.tightenProgress = 0f;
             p.SetState(W22PartState.None);
             Reevaluate();
         }
@@ -181,6 +184,17 @@ namespace WEG.W22
             {
                 p.Detach(true);
                 p.SetState(W22PartState.None);
+                Reevaluate();
+                return;
+            }
+
+            // Posição correta inclui a orientação: peça virada errado não encaixa (borda vermelha).
+            if (target.assembly && target.partId == p.partId && !target.OrientationOk(p.transform.rotation, config.orientationTolerance))
+            {
+                p.Detach(true);
+                placeErrors++;
+                Feedback(W22PartState.WrongPlace, interactor);
+                StartCoroutine(FlashWrong(p));
                 Reevaluate();
                 return;
             }
@@ -238,7 +252,63 @@ namespace WEG.W22
                 var s = Evaluate(t);
                 // Verde de etapas anteriores já foi apagado; mantém só o que é da etapa atual ou erro.
                 if (s == W22PartState.Correct && t.assembly && t.step < CurrentStep) s = W22PartState.None;
+                // Parafuso no lugar certo, na ordem certa, mas ainda solto.
+                if (s == W22PartState.Correct && t.requiresTightening && !t.occupant.tight) s = W22PartState.Loose;
                 t.occupant.SetState(s);
+            }
+        }
+
+        System.Collections.IEnumerator FlashWrong(W22Part p)
+        {
+            p.SetState(W22PartState.WrongPlace);
+            yield return new WaitForSeconds(1.5f);
+            if (p.current == null && p.state == W22PartState.WrongPlace) p.SetState(W22PartState.None);
+        }
+
+        // ================================================================ aperto com ferramenta
+        float hapticTimer;
+
+        /// <summary>Chamado a cada quadro enquanto a ferramenta está na mão com o gatilho apertado.</summary>
+        public void TickTool(W22Tool tool, float dt)
+        {
+            if (CurrentPhase != Phase.Assembly || ui.PanelOpen) return;
+            W22Part screw = null;
+            float best = tool.reach;
+            var tip = tool.TipWorld;
+            foreach (var p in parts)
+            {
+                if (p.current == null || !p.current.assembly || !p.current.requiresTightening || p.tight) continue;
+                float d = Vector3.Distance(tip, p.transform.position + p.transform.up * 0.003f);
+                if (d < best) { best = d; screw = p; }
+            }
+            if (screw == null) return;
+
+            var holder = tool.Holder;
+            if (!tool.canTighten)
+            {
+                if (!tool.warned) { tool.warned = true; Play(errClip); if (holder != null) holder.SendHapticImpulse(0.6f, 0.15f); }
+                return;
+            }
+            if (screw.partId != screw.current.partId || Evaluate(screw.current) != W22PartState.Correct)
+            {
+                // Parafuso em lugar errado ou antes da peça que ele fixa.
+                if (!tool.warned) { tool.warned = true; Play(errClip); if (holder != null) holder.SendHapticImpulse(0.6f, 0.15f); }
+                return;
+            }
+
+            screw.tightenProgress += dt / Mathf.Max(0.1f, config.tightenTime);
+            screw.ApplyScrewPose();
+            hapticTimer -= dt;
+            if (hapticTimer <= 0f && holder != null) { holder.SendHapticImpulse(0.25f, 0.04f); hapticTimer = 0.1f; }
+            if (screw.tightenProgress >= 1f)
+            {
+                screw.tight = true;
+                screw.tightenProgress = 1f;
+                screw.ApplyScrewPose();
+                Play(okClip);
+                if (holder != null) holder.SendHapticImpulse(0.7f, 0.12f);
+                Reevaluate();
+                if (StepDone(CurrentStep)) CompleteStep();
             }
         }
 
@@ -278,7 +348,7 @@ namespace WEG.W22
                 case Phase.Organization:
                     int ok = 0;
                     foreach (var t in orgTargets) if (t.IsCorrectlyOccupied) ok++;
-                    step = $"Organização · {ok}/{orgTargets.Count} peças"; break;
+                    step = $"Organização · {ok}/{orgTargets.Count} itens no lugar"; break;
                 case Phase.Assembly:
                     var info = config.GetStep(CurrentStep);
                     step = $"Etapa {CurrentStep}/{LastStep()} · {info?.title}"; break;

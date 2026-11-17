@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace WEG.W22
 {
-    public enum W22PartState { None, Correct, WrongOrder, WrongPlace }
+    public enum W22PartState { None, Correct, WrongOrder, WrongPlace, Loose }
 
     /// <summary>Borda colorida da peça (seção 6): verde, amarela ou vermelha.</summary>
     public class W22Outline : MonoBehaviour
@@ -13,6 +13,7 @@ namespace WEG.W22
         public static readonly Color Green = new Color(0.15f, 0.9f, 0.3f, 1f);
         public static readonly Color Yellow = new Color(1f, 0.82f, 0.1f, 1f);
         public static readonly Color Red = new Color(0.95f, 0.15f, 0.1f, 1f);
+        public static readonly Color Cyan = new Color(0.2f, 0.75f, 1f, 1f); // parafuso no lugar, falta apertar
 
         MeshRenderer outlineRenderer;
         MaterialPropertyBlock block;
@@ -42,7 +43,8 @@ namespace WEG.W22
         {
             if (outlineRenderer == null) return;
             if (state == W22PartState.None) { outlineRenderer.enabled = false; return; }
-            var c = state == W22PartState.Correct ? Green : state == W22PartState.WrongOrder ? Yellow : Red;
+            var c = state == W22PartState.Correct ? Green : state == W22PartState.WrongOrder ? Yellow
+                : state == W22PartState.Loose ? Cyan : Red;
             block.SetColor(ColorId, c);
             outlineRenderer.SetPropertyBlock(block);
             outlineRenderer.enabled = true;

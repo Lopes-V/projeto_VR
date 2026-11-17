@@ -38,6 +38,15 @@ namespace WEG.W22
         [Header("Encaixe (snap)")]
         public float snapRadius = 0.10f;
         public float smallPartSnapRadius = 0.045f;
+        [Tooltip("Tolerância de orientação (graus) para a peça encaixar no motor.")]
+        public float orientationTolerance = 25f;
+
+        [Header("Aperto dos parafusos")]
+        [Tooltip("Segundos segurando o gatilho com a ferramenta no parafuso.")]
+        public float tightenTime = 1.2f;
+
+        [Tooltip("Versão dos textos/valores gerados (usada pelo gerador para atualizar).")]
+        public int dataVersion = 1;
 
         [Header("Etapas de montagem")]
         public W22StepInfo[] steps;
