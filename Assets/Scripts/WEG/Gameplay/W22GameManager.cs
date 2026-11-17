@@ -44,16 +44,20 @@ namespace WEG.W22
             parts.AddRange(FindObjectsByType<W22Part>(FindObjectsInactive.Exclude));
             foreach (var t in FindObjectsByType<W22SnapTarget>(FindObjectsInactive.Include))
                 (t.assembly ? asmTargets : orgTargets).Add(t);
+            // Física no ritmo do Quest (72 Hz): peças seguradas e arremessos mais suaves.
+            Time.fixedDeltaTime = 1f / 72f;
+            var baseAnchor = GameObject.Find("Suporte_MotorBase/Ponto_MotorBase");
+            if (baseAnchor != null) assemblyColliders.AddRange(baseAnchor.GetComponentsInChildren<Collider>());
             foreach (var p in parts)
             {
                 p.Bind(this);
-                p.Body.isKinematic = true; // parados na caixa até serem pegos
+                p.Body.isKinematic = false; // peças com física desde o início (reagem ao serem tocadas)
                 p.SetState(W22PartState.None);
                 if (p.Grab != null) p.Grab.enabled = false;
                 var tool = p.GetComponent<W22Tool>();
                 if (tool != null) tool.Bind(this);
             }
-            if (shuffleCrate) ShuffleCrate();
+            if (shuffleCrate) DropIntoCrate();
             if (disableJoystickLocomotion) DisableLocomotion();
             BuildAudio();
 
@@ -156,6 +160,9 @@ namespace WEG.W22
         public void OnPartGrabbed(W22Part p)
         {
             if (!timerRunning && CurrentPhase != Phase.Result) timerRunning = true; // começa no primeiro contato
+            if (p.current != null && p.current.assembly) RemoveFromAssembly(p);
+            SetAssemblyIgnore(p, true);
+            p.Body.interpolation = RigidbodyInterpolation.Interpolate; // movimento suave na mão
             if (p.current != null) p.current.occupant = null;
             p.current = null;
             p.tight = false;
@@ -174,6 +181,7 @@ namespace WEG.W22
                 var park = FindTarget(p, orgTargets);
                 if (park != null && park.partId == p.partId)
                 {
+                    SetAssemblyIgnore(p, false);
                     p.AttachTo(park);
                     p.SetState(W22PartState.None);
                     Reevaluate();
@@ -182,6 +190,7 @@ namespace WEG.W22
             }
             if (target == null)
             {
+                SetAssemblyIgnore(p, false);
                 p.Detach(true);
                 p.SetState(W22PartState.None);
                 Reevaluate();
@@ -191,6 +200,7 @@ namespace WEG.W22
             // Posição correta inclui a orientação: peça virada errado não encaixa (borda vermelha).
             if (target.assembly && target.partId == p.partId && !target.OrientationOk(p.transform.rotation, config.orientationTolerance))
             {
+                SetAssemblyIgnore(p, false);
                 p.Detach(true);
                 placeErrors++;
                 Feedback(W22PartState.WrongPlace, interactor);
@@ -200,6 +210,8 @@ namespace WEG.W22
             }
 
             p.AttachTo(target);
+            if (target.assembly) AddToAssembly(p);
+            else SetAssemblyIgnore(p, false);
             var state = Evaluate(target);
             // Penalidade uma vez por tentativa de encaixe (seção 7).
             if (state == W22PartState.WrongPlace) placeErrors++;
@@ -420,18 +432,70 @@ namespace WEG.W22
             }
         }
 
-        void ShuffleCrate()
+        /// <summary>
+        /// RF01: a cada partida as peças caem na caixa em ordem e rotação aleatórias e se acomodam
+        /// pela física (enquanto o aluno lê as instruções), formando uma pilha natural.
+        /// </summary>
+        void DropIntoCrate()
         {
             var crate = new List<W22Part>();
             foreach (var p in parts) if (p.partId != "P12" && p.transform.parent != null && p.transform.parent.name == "Pecas") crate.Add(p);
+            var area = GameObject.Find("Caixa_Pecas/Area_Spawn");
+            if (area == null || crate.Count == 0) return;
+            var box = area.GetComponent<BoxCollider>();
+            var center = area.transform.TransformPoint(box.center);
+            var size = box.size;
             for (int i = crate.Count - 1; i > 0; i--)
             {
                 int j = Random.Range(0, i + 1);
-                var a = crate[i].transform.position;
-                var b = crate[j].transform.position;
-                crate[i].transform.position = new Vector3(b.x, a.y, b.z);
-                crate[j].transform.position = new Vector3(a.x, b.y, a.z);
+                var tmp = crate[i]; crate[i] = crate[j]; crate[j] = tmp;
             }
+            const int cols = 3, rows = 2;
+            for (int i = 0; i < crate.Count; i++)
+            {
+                int layer = i / (cols * rows), cell = i % (cols * rows);
+                float x = center.x + ((cell % cols) - (cols - 1) * 0.5f) * (size.x / cols);
+                float z = center.z + ((cell / cols) - (rows - 1) * 0.5f) * (size.z / rows);
+                float y = center.y + size.y * 0.5f + 0.12f + layer * 0.3f;
+                var p = crate[i];
+                p.transform.SetPositionAndRotation(new Vector3(x, y, z), Random.rotation);
+                p.SyncBody();
+                p.Body.linearVelocity = Vector3.zero;
+                p.Body.angularVelocity = Vector3.zero;
+            }
+        }
+
+        // ================================================================ colisões durante a montagem
+        // O motor e as peças já montadas ignoram a peça na mão: o rotor entra na carcaça e o rolamento
+        // no eixo sem "brigar" com a física; a peça solta volta a colidir com o motor.
+        readonly List<Collider> assemblyColliders = new List<Collider>();
+
+        void SetAssemblyIgnore(W22Part p, bool ignore)
+        {
+            foreach (var pc in p.Colliders)
+                foreach (var ac in assemblyColliders)
+                {
+                    if (ac == null || pc == null || ac == pc) continue;
+                    // Nunca volta a colidir com peças presas a ela (rolamentos e chaveta no rotor).
+                    if (!ignore && (ac.transform.IsChildOf(p.transform) || p.transform.IsChildOf(ac.transform))) continue;
+                    Physics.IgnoreCollision(pc, ac, ignore);
+                }
+        }
+
+        void AddToAssembly(W22Part p)
+        {
+            foreach (var c in p.Colliders)
+                if (!assemblyColliders.Contains(c)) assemblyColliders.Add(c);
+            // Peças seguradas na outra mão também passam a ignorá-la.
+            foreach (var other in parts)
+                if (other != p && other.Grab != null && other.Grab.isSelected)
+                    foreach (var oc in other.Colliders)
+                        foreach (var c in p.Colliders) Physics.IgnoreCollision(oc, c, true);
+        }
+
+        void RemoveFromAssembly(W22Part p)
+        {
+            foreach (var c in p.Colliders) assemblyColliders.Remove(c);
         }
     }
 }

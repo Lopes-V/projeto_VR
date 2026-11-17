@@ -27,6 +27,8 @@ namespace WEG.W22
         public W22Outline Outline { get; private set; }
         public Vector3 LocalCenter { get; private set; }
         public Vector3 WorldCenter => transform.TransformPoint(LocalCenter);
+        /// <summary>Colisores da própria peça (sem os de peças presas a ela, como rolamentos no rotor).</summary>
+        public Collider[] Colliders { get; private set; }
 
         W22GameManager manager;
 
@@ -35,8 +37,12 @@ namespace WEG.W22
             Body = GetComponent<Rigidbody>();
             Grab = GetComponent<XRGrabInteractable>();
             Outline = GetComponent<W22Outline>();
+            Colliders = GetComponents<Collider>();
+            var mc = GetComponent<MeshCollider>();
             var box = GetComponent<BoxCollider>();
-            LocalCenter = box != null ? box.center : Vector3.zero;
+            if (mc != null && mc.sharedMesh != null) LocalCenter = mc.sharedMesh.bounds.center;
+            else if (box != null) LocalCenter = box.center;
+            else LocalCenter = Vector3.zero;
         }
 
         void OnEnable()
@@ -57,6 +63,7 @@ namespace WEG.W22
 
         void OnGrabbed(SelectEnterEventArgs args)
         {
+            if (Grab != null) Grab.throwOnDetach = true; // solta com a velocidade da mão
             if (manager != null) manager.OnPartGrabbed(this);
         }
 
@@ -77,9 +84,16 @@ namespace WEG.W22
         {
             current = t;
             t.occupant = this;
+            // Encaixada: sem arremesso (o XRI tentaria lançar um corpo cinemático).
+            if (Grab != null) Grab.throwOnDetach = false;
+            if (!Body.isKinematic)
+            {
+                Body.linearVelocity = Vector3.zero;
+                Body.angularVelocity = Vector3.zero;
+            }
             Body.isKinematic = true;
-            Body.linearVelocity = Vector3.zero;
-            Body.angularVelocity = Vector3.zero;
+            // Encaixada (e possivelmente filha de outra peça): sem interpolação para não atrasar nem "voltar".
+            Body.interpolation = RigidbodyInterpolation.None;
             transform.SetParent(t.transform, false);
             tight = false;
             tightenProgress = 0f;
@@ -89,6 +103,14 @@ namespace WEG.W22
                 transform.localPosition = Vector3.zero;
                 transform.localRotation = Quaternion.identity;
             }
+            SyncBody();
+        }
+
+        /// <summary>Copia a pose do Transform para o Rigidbody (evita a peça "voltar" para a pose antiga).</summary>
+        public void SyncBody()
+        {
+            Body.position = transform.position;
+            Body.rotation = transform.rotation;
         }
 
         /// <summary>Parafuso: sobe/desce ao longo do próprio eixo (Y do encaixe) e gira conforme o aperto.</summary>
@@ -97,6 +119,7 @@ namespace WEG.W22
             float k = Mathf.Clamp01(tightenProgress);
             transform.localPosition = Vector3.up * looseOffset * (1f - k);
             transform.localRotation = Quaternion.Euler(0f, -k * turns * 360f, 0f);
+            if (Body != null) SyncBody();
         }
 
         /// <summary>Solta a peça no mundo, com gravidade.</summary>
@@ -107,7 +130,10 @@ namespace WEG.W22
             tight = false;
             tightenProgress = 0f;
             transform.SetParent(null, true);
+            SyncBody();
             Body.isKinematic = !physics;
+            Body.interpolation = physics ? RigidbodyInterpolation.Interpolate : RigidbodyInterpolation.None;
+            if (physics) Body.WakeUp();
         }
     }
 }

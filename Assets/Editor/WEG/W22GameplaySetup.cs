@@ -53,16 +53,25 @@ namespace WEG.W22.EditorTools
                 {
                     var info = child.GetComponent<W22PartInfo>();
                     if (info == null) continue;
+                    // Colisor convexo com o formato da peça (rolam e assentam direito), no lugar da caixa.
+                    ConvexCollider(child.gameObject, PhysMatFor(info.partId));
                     var rb = GetOrAdd<Rigidbody>(child.gameObject);
-                    rb.isKinematic = true;
+                    rb.isKinematic = false;
+                    rb.useGravity = true;
                     rb.interpolation = RigidbodyInterpolation.Interpolate;
-                    rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                    rb.mass = info.partId == "P12" ? 0.05f : 1f;
+                    float mass = MassOf(info.partId);
+                    rb.mass = mass;
+                    rb.linearDamping = 0.05f;
+                    rb.angularDamping = 0.35f;
+                    // Peças pequenas e leves: detecção contínua para não atravessar a bancada.
+                    rb.collisionDetectionMode = mass <= 0.1f ? CollisionDetectionMode.ContinuousDynamic : CollisionDetectionMode.ContinuousSpeculative;
                     var grab = GetOrAdd<XRGrabInteractable>(child.gameObject);
-                    grab.movementType = XRBaseInteractable.MovementType.Kinematic;
-                    grab.throwOnDetach = false;
+                    // Mão física: a peça segurada colide com bancada e caixa e pode ser arremessada.
+                    grab.movementType = XRBaseInteractable.MovementType.VelocityTracking;
+                    grab.throwOnDetach = true;
                     grab.useDynamicAttach = true;
                     grab.retainTransformParent = true;
+                    grab.attachEaseInTime = 0.08f;
                     var ol = GetOrAdd<W22Outline>(child.gameObject);
                     ol.outlineMaterial = outline;
                     var part = GetOrAdd<W22Part>(child.gameObject);
@@ -72,7 +81,6 @@ namespace WEG.W22.EditorTools
                     foreach (var def in W22ToolFactory.Tools)
                     {
                         if (def.id != info.partId) continue;
-                        rb.mass = 0.4f;
                         grab.useDynamicAttach = false; // segura pelo cabo, ponta para a frente
                         var tool = GetOrAdd<W22Tool>(child.gameObject);
                         tool.canTighten = def.canTighten;
@@ -101,6 +109,20 @@ namespace WEG.W22.EditorTools
 
             // 3. Pontos de montagem no motor-base (a partir dos marcadores do prefab montado).
             var anchor = GameObject.Find("Suporte_MotorBase/Ponto_MotorBase");
+            if (anchor != null)
+            {
+                // Carcaça fixa com colisor côncavo (o furo do estator existe para a física).
+                foreach (Transform c in anchor.transform)
+                {
+                    var lod = c.Find("LOD1");
+                    if (lod == null) continue;
+                    foreach (var box in c.GetComponents<BoxCollider>()) Object.DestroyImmediate(box);
+                    var mc = GetOrAdd<MeshCollider>(c.gameObject);
+                    mc.sharedMesh = lod.GetComponent<MeshFilter>().sharedMesh;
+                    mc.convex = false;
+                    mc.sharedMaterial = PhysMat("WEG_Fisica_Metal", 0.35f, 0.45f, 0.05f);
+                }
+            }
             var assembled = AssetDatabase.LoadAssetAtPath<GameObject>(AssembledPath);
             if (anchor != null && assembled != null)
             {
@@ -139,6 +161,65 @@ namespace WEG.W22.EditorTools
             var mgr = mgrGo.AddComponent<W22GameManager>();
             mgr.config = config;
             mgr.ui = ui;
+        }
+
+        // ---------------------------------------------------------------- física
+        static float MassOf(string id)
+        {
+            switch (id)
+            {
+                case "P01": return 8f;    case "P02": return 0.9f; case "P03": return 0.6f;
+                case "P05": return 2.5f;  case "P06": return 3f;   case "P07": return 0.3f;
+                case "P08": return 1.5f;  case "P09": return 1.2f; case "P10": return 0.6f;
+                case "P11": return 0.05f; case "P12": return 0.03f;
+                case "D01": return 1.2f;  case "D02": return 1.5f; case "D03": return 0.6f;
+                case "D04": return 0.2f;  case "D05": return 0.25f; case "D06": return 0.05f;
+                case "D07": return 0.01f; case "D08": return 2f;
+                case "T01": return 0.2f;  case "T02": return 0.15f; case "T03": return 0.6f;
+                case "T04": return 0.3f;  case "T05": return 0.9f;
+                default: return 1f;
+            }
+        }
+
+        static PhysicsMaterial PhysMatFor(string id)
+        {
+            if (id == "P07") return PhysMat("WEG_Fisica_Plastico", 0.45f, 0.55f, 0.12f);
+            if (id == "D04") return PhysMat("WEG_Fisica_Borracha", 0.9f, 1.0f, 0.2f);
+            if (id == "T02" || id == "T04") return PhysMat("WEG_Fisica_Ferramenta", 0.5f, 0.6f, 0.08f);
+            return PhysMat("WEG_Fisica_Metal", 0.35f, 0.45f, 0.05f);
+        }
+
+        static readonly Dictionary<string, PhysicsMaterial> physMats = new Dictionary<string, PhysicsMaterial>();
+
+        static PhysicsMaterial PhysMat(string name, float dyn, float stat, float bounce)
+        {
+            PhysicsMaterial m;
+            if (physMats.TryGetValue(name, out m) && m != null) return m;
+            EnsureFolder("Assets/Data/WEG/Fisica");
+            string path = $"Assets/Data/WEG/Fisica/{name}.asset";
+            m = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
+            if (m == null) { m = new PhysicsMaterial(name); AssetDatabase.CreateAsset(m, path); }
+            m.dynamicFriction = dyn;
+            m.staticFriction = stat;
+            m.bounciness = bounce;
+            m.frictionCombine = PhysicsMaterialCombine.Average;
+            m.bounceCombine = PhysicsMaterialCombine.Minimum;
+            EditorUtility.SetDirty(m);
+            physMats[name] = m;
+            return m;
+        }
+
+        /// <summary>Troca a caixa de colisão pelo casco convexo da malha (LOD1, ou LOD0 nas ferramentas).</summary>
+        static void ConvexCollider(GameObject go, PhysicsMaterial mat)
+        {
+            var src = go.transform.Find("LOD1") ?? go.transform.Find("LOD0");
+            var mf = src != null ? src.GetComponent<MeshFilter>() : null;
+            if (mf == null || mf.sharedMesh == null) return;
+            foreach (var box in go.GetComponents<BoxCollider>()) Object.DestroyImmediate(box);
+            var mc = GetOrAdd<MeshCollider>(go);
+            mc.sharedMesh = mf.sharedMesh;
+            mc.convex = true;
+            mc.sharedMaterial = mat;
         }
 
         static T GetOrAdd<T>(GameObject go) where T : Component
