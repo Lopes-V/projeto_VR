@@ -29,7 +29,7 @@ Cada peça tem **pivô no próprio ponto de encaixe** (requisito do documento, s
 | P07 | Ventilador | 5 | plástico em 63 a 132M [WEG/Brake]; diâmetro [PROJ] | PROJ | 1200 |
 | P08 | Tampa defletora (aerodinâmica, ferro fundido) | 5 | forma [WEG]; medidas [PROJ] | WEG + PROJ | 4000 |
 | P09 | Base da caixa de ligação (topo, B3T) | 6 | 2 entradas M32x1,5 [WEG]; caixa [PROJ] | WEG + PROJ | 2000 |
-| P10 | Tampa da caixa de ligação (divisão diagonal) | 6 | idem | WEG + PROJ | 1500 |
+| P10 | Tampa da caixa de ligação (divisão horizontal [PROJ]; diagonal só confirmada de 160M em diante, 132M [VALIDAR]) | 6 | idem | WEG + PROJ | 1500 |
 | P11 | Chaveta 10 x 8 x 63 | 7 | seção 1 | WEG | 80 |
 | P12 | Parafuso (um modelo reutilizado) | 3 a 6 | cabeça sextavada, M8 [PROJ] | PROJ | 100 |
 | D01 a D08 | Distratoras (engrenagem, polia, acoplamento, correia, rolamento errado, porca, arruela, tampa de outro formato) | — | [PROJ] | PROJ | até 800 cada |

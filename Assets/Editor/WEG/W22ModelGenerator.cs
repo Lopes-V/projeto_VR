@@ -192,6 +192,10 @@ namespace WEG.W22.EditorTools
             var inner = WegMeshBuilder.Circle(D.BodyInnerR, seg, -half);
             b.ExtrudeRing(Mat.Paint, outer, inner, D.BodyRearZ, D.BodyFrontZ, 25f);
 
+            // Assento da caixa de ligação no topo da carcaça [PROJ], do tamanho da flange da base.
+            float seatH = D.TBBottomY - D.TBSeatBottomY;
+            b.ChamferBox(Mat.Paint, new Vector3(0, D.TBSeatBottomY + seatH * 0.5f, D.TBZ), new Vector3(D.LM + 0.030f, seatH, D.LL + 0.030f), 0.003f);
+
             // Pés maciços: sapata (AA x HA x BB) + coluna até a carcaça, dos dois lados.
             float xIn = D.AB * 0.5f - D.AA, xOut = D.AB * 0.5f;
             float yb = -D.H, yt = -D.H + D.HA;
@@ -284,6 +288,9 @@ namespace WEG.W22.EditorTools
                 new Vector2(0, D.E),
             };
             b.Lathe(Mat.Steel, shaft, seg, 30f);
+
+            // Furo roscado M12 no topo da ponta de eixo [WEG].
+            b.Disc(Mat.Dark, 0f, D.ShaftCenterHoleR, D.E + 0.0003f, SegS(lod), true);
 
             // Rasgo da chaveta (marcação escura no topo da ponta de eixo).
             b.ChamferBox(Mat.Dark, new Vector3(0, D.D * 0.5f - 0.0002f, D.KeyCenterZ), new Vector3(D.KeyF, 0.0008f, D.KeyES), 0.0003f);
@@ -468,7 +475,7 @@ namespace WEG.W22.EditorTools
 
             // Placa de identificação na lateral esquerda [WEG: existe; PROJ: posição e tamanho].
             float px = -D.LM * 0.5f - 0.0007f, py = D.TBBottomY + h * 0.5f;
-            b.ChamferBox(Mat.Steel, new Vector3(px, py, D.TBZ), new Vector3(0.0015f, 0.045f, 0.075f), 0.0005f);
+            b.ChamferBox(Mat.Aluminum, new Vector3(px, py, D.TBZ), new Vector3(0.0015f, 0.045f, 0.075f), 0.0005f);
             for (int i = 0; i < 5; i++)
                 b.ChamferBox(Mat.Dark, new Vector3(px - 0.0008f, py + 0.016f - i * 0.008f, D.TBZ + (i == 0 ? -0.012f : 0f)), new Vector3(0.0003f, 0.002f, i == 0 ? 0.035f : 0.060f), 0f);
             return b;
@@ -697,7 +704,7 @@ namespace WEG.W22.EditorTools
                 var arr = new Material[used.Length];
                 for (int i = 0; i < used.Length; i++) arr[i] = mats[used[i]];
                 mr.sharedMaterials = arr;
-                lods[lod] = new LOD(lod == 0 ? 0.12f : 0.004f, new Renderer[] { mr });
+                lods[lod] = new LOD(lod == 0 ? 0.06f : 0.002f, new Renderer[] { mr });
                 if (lod == 0)
                 {
                     tri0 = bld.TriangleCount;

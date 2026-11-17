@@ -42,7 +42,8 @@ Todo valor marcado **[VALIDAR]** ainda não foi confirmado em catálogo oficial 
 2. Silhueta: corpo cilíndrico aletado, tampa traseira com defletor e grade de ventilação, caixa de ligação retangular sobre o corpo, pés maciços com 4 furos, eixo com chaveta.
 3. Proporções fixas: usar escala 1:1 em metros. Toda dimensão vem de `Assets/Reference/WEG/dimensoes.md`. Se não existir esse arquivo, parar e pedir referência. Itens "não confirmado" nesse arquivo não podem ser modelados por estimativa.
 4. Nada de inventar detalhes "bonitos" que o motor real não tem. Beleza vem de acabamento: bordas chanfradas, normais corretas, materiais PBR, desgaste sutil opcional.
-5. Cor da pintura: um único material `WEG_Paint_Blue`. Metal bruto (eixo, chaveta, parafusos) em `WEG_Steel`. Placa em `WEG_Nameplate`. O valor RGB do azul continua [VALIDAR].
+5. Materiais (exatamente 5, limite do orçamento): `WEG_Paint_Blue` (toda a pintura), `WEG_Steel` (eixo, chaveta, parafusos, chapas do rotor e estator), `WEG_Copper` (bobinas), `WEG_Dark` (ventilador plástico, furos, gravações) e `WEG_Aluminum` (anéis do rotor, blindagens dos rolamentos e placa de identificação). O valor RGB do azul continua [VALIDAR].
+6. Divisão da caixa de ligação: horizontal no 132M [PROJ]. A divisão diagonal só está confirmada para 160M a 355 e na linha Prime; para o 132M padrão continua [VALIDAR].
 
 ## Orçamento para Quest 3 (URP, Vulkan)
 - Motor completo: **até 40 mil triângulos** (alvo 20 a 30 mil).
@@ -54,5 +55,5 @@ Todo valor marcado **[VALIDAR]** ainda não foi confirmado em catálogo oficial 
 
 ## Convenções de projeto
 - Modelos em `Assets/Models/WEG/`, materiais em `Assets/Materials/WEG/`, prefabs em `Assets/Prefabs/WEG/`.
-- Nomes: `WEG_W22_132M_Body`, `WEG_W22_132M_TerminalBox`, etc.
+- Nomes: prefabs de peça pelo ID do documento de requisitos (`P04_Carcaca_Estator`, `P09_Caixa_Ligacao_Base`, `D01_Engrenagem`...). Motor montado: `WEG_W22_132M_Montado`.
 - Não mexer em `Assets/Samples/`, `Packages/` nem `ProjectSettings/` sem pedido do usuário.

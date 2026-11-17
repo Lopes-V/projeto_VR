@@ -62,7 +62,9 @@ namespace WEG.W22
         public const float FinPitchDeg = 10f;
         public const float FinRootThickness = 0.006f;
         public const float FinTipThickness = 0.003f;
-        public const float FinSkipTopDeg = 35f;      // sem aletas sob a caixa de ligação
+        public const float FinSkipTopDeg = 40f;      // sem aletas sob a caixa de ligação
+        public const float TBSeatBottomY = 0.070f;   // assento fundido da caixa sobre a carcaça (preenche a folga sob a flange)
+        public const float ShaftCenterHoleR = 0.0051f; // furo roscado M12 (d1) na ponta do eixo [WEG: M12; PROJ: raio de broca]
         public const float FinSkipBottomDeg = 30f;   // sem aletas entre os pés
         public const float FootPillarHalfLen = 0.075f;
         public const float StatorBoreR = 0.081f;
